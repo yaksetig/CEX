@@ -64,7 +64,7 @@ func createLightSettleServer(coinList []*coinparam.Params, whitelist []*koblitz.
 	}
 
 	var depositStores map[*coinparam.Params]cxdb.DepositStore
-	if depositStores, err = cxdbsql.CreateDepositStoreMap(coinList); err != nil {
+	if depositStores, err = cxdbmemory.CreateDepositStoreMap(coinList); err != nil {
 		err = fmt.Errorf("Error creating deposit store map for createFullServer: %s", err)
 		return
 	}
@@ -270,7 +270,7 @@ func createFullServer(coinList []*coinparam.Params, serverhost string, serverpor
 	}
 
 	var depositStores map[*coinparam.Params]cxdb.DepositStore
-	if depositStores, err = cxdbsql.CreateDepositStoreMap(coinList); err != nil {
+	if depositStores, err = cxdbmemory.CreateDepositStoreMap(coinList); err != nil {
 		err = fmt.Errorf("Error creating deposit store map for createFullServer: %s", err)
 		return
 	}

@@ -172,8 +172,14 @@ func main() {
 
 	logging.Infof("Creating deposit stores...")
 	var depositStores map[*coinparam.Params]cxdb.DepositStore
-	if depositStores, err = cxdbsql.CreateDepositStoreMap(coinList); err != nil {
-		logging.Fatalf("Error creating deposit store map for opencxd: %s", err)
+	if len(conf.Whitelist) != 0 {
+		if depositStores, err = cxdbmemory.CreateDepositStoreMap(coinList); err != nil {
+			logging.Fatalf("Error creating deposit store map for opencxd: %s", err)
+		}
+	} else {
+		if depositStores, err = cxdbsql.CreateDepositStoreMap(coinList); err != nil {
+			logging.Fatalf("Error creating deposit store map for opencxd: %s", err)
+		}
 	}
 
 	logging.Infof("Creating settlement stores...")
