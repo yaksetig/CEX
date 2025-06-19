@@ -1,3 +1,6 @@
+// Package cxrpc implements the RPC client interfaces used by the
+// exchange. Clients can communicate with the server using either plain
+// RPC or an authenticated Noise-based transport.
 package cxrpc
 
 import (
@@ -25,6 +28,9 @@ type OpencxRPCClient struct {
 }
 
 // OpencxNoiseClient is an authenticated RPC Client for the opencx Server
+// OpencxNoiseClient wraps a standard rpc.Client and uses Noise for
+// transport-layer authentication.  The embedded private key is used to
+// establish the Noise session.
 type OpencxNoiseClient struct {
 	Conn *rpc.Client
 	key  *koblitz.PrivateKey

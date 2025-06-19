@@ -1,3 +1,6 @@
+// Package cxrpc also contains utilities for creating RPC listeners on
+// the server side.  These helpers hide the Noise and standard RPC
+// setup so callers only need to provide the server instance.
 package cxrpc
 
 import (
@@ -11,6 +14,9 @@ import (
 	"github.com/mit-dci/opencx/logging"
 )
 
+// CreateRPCForServer prepares an RPC caller instance that is ready to
+// expose the server's methods over either plain RPC or Noise based
+// transports.
 func CreateRPCForServer(server *cxserver.OpencxServer) (rpc1 *OpencxRPCCaller, err error) {
 	rpc1 = &OpencxRPCCaller{
 		caller: &OpencxRPC{
