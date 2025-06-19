@@ -54,3 +54,8 @@ DepositStore stores the mapping from pubkey to deposit address. This also keeps 
 
 Some old code still exists in `cxdbmemory`.
 The issues related to refactoring cxdb are [#16](https://github.com/mit-dci/opencx/issues/16).
+
+### In-memory Orderbook
+The memory backed orderbook (`cxdbmemory`) keeps all orders in process memory and
+does not persist data to disk. Any orders placed will be lost when the process
+terminates. This implementation is intended only for tests and demonstrations.
