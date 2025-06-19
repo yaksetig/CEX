@@ -31,7 +31,7 @@ type SQLLimitOrderbook struct {
 
 // The schema for the limit orderbook
 const (
-	limitOrderbookSchema = "pubkey VARBINARY(66), orderID VARBINARY(64), side TEXT, price DOUBLE(30,2) UNSIGNED, amountHave BIGINT(64), amountWant BIGINT(64), time TIMESTAMP"
+	limitOrderbookSchema = "pubkey VARBINARY(66), orderID VARBINARY(64), side TEXT, priceWant BIGINT(64), priceHave BIGINT(64), amountHave BIGINT(64), amountWant BIGINT(64), time TIMESTAMP"
 )
 
 // CreateLimitOrderbook creates a limit orderbook based on a pair

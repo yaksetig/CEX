@@ -15,6 +15,12 @@ type Price struct {
 	AmountHave uint64
 }
 
+// NewPrice constructs a Price given amounts wanted and offered.
+// No reduction is performed so AmountWant and AmountHave are stored verbatim.
+func NewPrice(want, have uint64) Price {
+	return Price{AmountWant: want, AmountHave: have}
+}
+
 // Note on the Want / Have model: It makes sense from an exchange perspective, but in reality "side", "price", and "volume" are all connected.
 
 // ToFloat converts the price to a float value
@@ -29,10 +35,9 @@ func (p *Price) ToFloat() (price float64, err error) {
 
 // Cmp compares p and otherPrice and returns:
 //
-//   -1 if x <  y
-//    0 if x == y (incl. -0 == 0, -Inf == -Inf, and +Inf == +Inf)
-//   +1 if x >  y
-//
+//	-1 if x <  y
+//	 0 if x == y (incl. -0 == 0, -Inf == -Inf, and +Inf == +Inf)
+//	+1 if x >  y
 func (p *Price) Cmp(otherPrice *Price) (compIndicator int) {
 	// If we want to compare a/b and c/d, then we can just compare a*d
 	// and b*c

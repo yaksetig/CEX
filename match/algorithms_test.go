@@ -254,6 +254,24 @@ func TestClearingTrivial(t *testing.T) {
 	return
 }
 
+// TestCalculateClearingPriceFraction checks that CalculateClearingPrice returns
+// the expected rational value for a simple book.
+func TestCalculateClearingPriceFraction(t *testing.T) {
+	orders := []*AuctionOrder{trivialQuarterBuy, trivialQuarterSell}
+	book, err := createBookFromOrders(orders)
+	if err != nil {
+		t.Fatalf("Error creating book: %s", err)
+	}
+	pr, err := CalculateClearingPrice(book)
+	if err != nil {
+		t.Fatalf("Error calculating clearing price: %s", err)
+	}
+	f, _ := pr.ToFloat()
+	if f != 0.25 {
+		t.Errorf("expected 0.25 got %f", f)
+	}
+}
+
 func TestClearingPrice1000_250Clear(t *testing.T) {
 	runLargeClearingBookTest(float64(250), 1000, t)
 	return

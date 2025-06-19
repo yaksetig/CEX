@@ -256,3 +256,12 @@ func BenchmarkPriceCompare(b *testing.B) {
 	}
 	return
 }
+
+// TestPriceCompareEquivalentFractions ensures that equal fractions are treated as equal
+func TestPriceCompareEquivalentFractions(t *testing.T) {
+	p1 := NewPrice(1, 3)
+	p2 := NewPrice(2, 6)
+	if p1.Cmp(&p2) != 0 {
+		t.Errorf("Equivalent fractions should compare equal")
+	}
+}
