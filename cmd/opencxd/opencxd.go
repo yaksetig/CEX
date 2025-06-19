@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/hex"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -9,6 +11,7 @@ import (
 	"github.com/mit-dci/lit/coinparam"
 	"github.com/mit-dci/lit/crypto/koblitz"
 
+	memguard "github.com/awnumar/memguard"
 	flags "github.com/jessevdk/go-flags"
 	util "github.com/mit-dci/opencx/chainutils"
 	"github.com/mit-dci/opencx/cxdb"
@@ -60,13 +63,12 @@ type opencxConfig struct {
 
 	// filename for key
 	KeyFileName string `long:"keyfilename" short:"k" description:"Filename for private key within root opencx directory used to send transactions"`
-	// password for the encrypted key file
-	// NOTE: This is NOT SECURE! It saves the password in a string and strings
-	// are very difficult to zero out since they are immutable, so expect this
-	// to remain in memory after being garbage collected.
-	// TODO: Figure out a way to have secure non-interactive key encryption /
-	// decryption - maybe use memguard and allow things to be piped in.
-	KeyPassword string `long:"keypass" description:"Password for encrypted private key file"`
+	// password for the encrypted key file. The --keypass option is kept for
+	// backward compatibility but is discouraged. Prefer --keypassenv or
+	// --keypasspipe for secure handling.
+	KeyPassword     string `long:"keypass" description:"Password for encrypted private key file (insecure)"`
+	KeyPasswordEnv  string `long:"keypassenv" description:"Environment variable containing key password"`
+	KeyPasswordPipe bool   `long:"keypasspipe" description:"Read key password from stdin"`
 
 	// auth or unauth rpc?
 	AuthenticatedRPC bool `long:"authrpc" description:"Whether or not to use authenticated RPC"`
@@ -101,6 +103,9 @@ func newConfigParser(conf *opencxConfig, options flags.Options) *flags.Parser {
 }
 
 func main() {
+	memguard.CatchInterrupt()
+	defer memguard.Purge()
+
 	var err error
 
 	conf := opencxConfig{

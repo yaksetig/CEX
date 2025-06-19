@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -16,14 +18,15 @@ import (
 
 	"github.com/mit-dci/opencx/benchclient"
 
-	"github.com/mit-dci/lit/lnutil"
+	memguard "github.com/awnumar/memguard"
 	flags "github.com/jessevdk/go-flags"
+	"github.com/mit-dci/lit/lnutil"
 	"github.com/mit-dci/opencx/logging"
 )
 
 type ocxClient struct {
 	KeyPath     string
-	KeyPassword string
+	KeyPassword *memguard.LockedBuffer
 	RPCClient   *benchclient.BenchClient
 	unlocked    bool
 }
@@ -42,13 +45,12 @@ type ocxConfig struct {
 
 	// filename for key
 	KeyFileName string `long:"keyfilename" short:"k" description:"Filename for private key within root opencx directory used to send transactions"`
-	// password for the encrypted key file
-	// NOTE: This is NOT SECURE! It saves the password in a string and strings
-	// are very difficult to zero out since they are immutable, so expect this
-	// to remain in memory after being garbage collected.
-	// TODO: Figure out a way to have secure non-interactive key encryption /
-	// decryption - maybe use memguard and allow things to be piped in.
-	KeyPassword string `long:"keypass" description:"Password for encrypted private key file"`
+	// password for the encrypted key file. The --keypass option is kept for
+	// backward compatibility but is discouraged. Prefer --keypassenv or
+	// --keypasspipe for secure handling.
+	KeyPassword     string `long:"keypass" description:"Password for encrypted private key file (insecure)"`
+	KeyPasswordEnv  string `long:"keypassenv" description:"Environment variable containing key password"`
+	KeyPasswordPipe bool   `long:"keypasspipe" description:"Read key password from stdin"`
 
 	// logging and debug parameters
 	LogLevel []bool `short:"v" description:"Set verbosity level to verbose (-v), very verbose (-vv) or very very verbose (-vvv)"`
@@ -78,6 +80,9 @@ func newConfigParser(conf *ocxConfig, options flags.Options) *flags.Parser {
 
 // opencx-cli is the client, opencx is the server
 func main() {
+	memguard.CatchInterrupt()
+	defer memguard.Purge()
+
 	var err error
 	var client ocxClient
 
@@ -107,10 +112,8 @@ func main() {
 		return
 	}
 
-	if len(conf.KeyPassword) > 0 {
-		// TODO: move the password and key loading to this function rather than
-		// UnlockKey
-		client.KeyPassword = conf.KeyPassword
+	if client.KeyPassword, err = obtainPassword(conf); err != nil {
+		logging.Fatalf("Error obtaining password: %s", err)
 	}
 
 	client.KeyPath = filepath.Join(conf.KeyFileName)
@@ -139,6 +142,26 @@ func (cl *ocxClient) Call(serviceMethod string, args interface{}, reply interfac
 	return cl.RPCClient.Call(serviceMethod, args, reply)
 }
 
+func obtainPassword(conf *ocxConfig) (*memguard.LockedBuffer, error) {
+	if conf.KeyPasswordPipe {
+		data, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, err
+		}
+		return memguard.NewBufferFromBytes(bytes.TrimSpace(data)), nil
+	}
+	if conf.KeyPasswordEnv != "" {
+		val := os.Getenv(conf.KeyPasswordEnv)
+		if val != "" {
+			return memguard.NewBufferFromBytes([]byte(val)), nil
+		}
+	}
+	if conf.KeyPassword != "" {
+		return memguard.NewBufferFromBytes([]byte(conf.KeyPassword)), nil
+	}
+	return nil, nil
+}
+
 func (cl *ocxClient) UnlockKey() (err error) {
 	// if we're not unlocked and the client is fine too then don't bother
 	if !cl.unlocked || cl.RPCClient.PrivKey == nil {
@@ -146,10 +169,8 @@ func (cl *ocxClient) UnlockKey() (err error) {
 		logging.Infof("Client keypath: %s", cl.KeyPath)
 
 		// START OF SURGERY
-		if len(cl.KeyPassword) > 0 {
-			var zeroArray []byte = make([]byte, len(cl.KeyPassword))
-			var keyPasswordBytes []byte = make([]byte, len(cl.KeyPassword))
-			copy(keyPasswordBytes, []byte(cl.KeyPassword))
+		if cl.KeyPassword != nil {
+			keyPasswordBytes := cl.KeyPassword.Bytes()
 
 			zero32 := [32]byte{}
 			key32 := new([32]byte)
@@ -187,9 +208,8 @@ func (cl *ocxClient) UnlockKey() (err error) {
 				return
 			}
 
-			// Zero array - the string isn't going to be zeroed but this array will,
-			// so at least the password is in one less place
-			copy(keyPasswordBytes, zeroArray)
+			cl.KeyPassword.Destroy()
+			cl.KeyPassword = nil
 		} else {
 			keyFromFile, err = lnutil.ReadKeyFile(cl.KeyPath)
 			if err != nil {

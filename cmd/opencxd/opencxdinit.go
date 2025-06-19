@@ -2,16 +2,19 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/rand"
+	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/mit-dci/lit/coinparam"
 	util "github.com/mit-dci/opencx/chainutils"
 
+	memguard "github.com/awnumar/memguard"
+	flags "github.com/jessevdk/go-flags"
 	"github.com/mit-dci/lit/lnutil"
 	litLogging "github.com/mit-dci/lit/logging"
-	flags "github.com/jessevdk/go-flags"
 	"github.com/mit-dci/opencx/logging"
 )
 
@@ -125,10 +128,12 @@ func opencxSetup(conf *opencxConfig) *[32]byte {
 
 	keyPath := filepath.Join(conf.OpencxHomeDir, defaultKeyFileName)
 	var privkey *[32]byte
-	if len(conf.KeyPassword) > 0 {
-		var zeroArray []byte = make([]byte, len(conf.KeyPassword))
-		var keyPasswordBytes []byte = make([]byte, len(conf.KeyPassword))
-		copy(keyPasswordBytes, []byte(conf.KeyPassword))
+	password, errPass := obtainPassword(conf)
+	if errPass != nil {
+		logging.Fatalf("Error obtaining password: %s", errPass)
+	}
+	if password != nil {
+		keyPasswordBytes := password.Bytes()
 
 		zero32 := [32]byte{}
 		key32 := new([32]byte)
@@ -161,9 +166,8 @@ func opencxSetup(conf *opencxConfig) *[32]byte {
 			logging.Fatalf("Error reading key from file with password arg: \n%s", err)
 		}
 
-		// Zero array - the string isn't going to be zeroed but this array will,
-		// so at least the password is in one less place
-		copy(keyPasswordBytes, zeroArray)
+		password.Destroy()
+		password = nil
 	} else {
 		privkey, err = lnutil.ReadKeyFile(keyPath)
 		if err != nil {
@@ -172,6 +176,26 @@ func opencxSetup(conf *opencxConfig) *[32]byte {
 	}
 
 	return privkey
+}
+
+func obtainPassword(conf *opencxConfig) (*memguard.LockedBuffer, error) {
+	if conf.KeyPasswordPipe {
+		data, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, err
+		}
+		return memguard.NewBufferFromBytes(bytes.TrimSpace(data)), nil
+	}
+	if conf.KeyPasswordEnv != "" {
+		val := os.Getenv(conf.KeyPasswordEnv)
+		if val != "" {
+			return memguard.NewBufferFromBytes([]byte(val)), nil
+		}
+	}
+	if conf.KeyPassword != "" {
+		return memguard.NewBufferFromBytes([]byte(conf.KeyPassword)), nil
+	}
+	return nil, nil
 }
 
 func generateCoinList(conf *opencxConfig) []*coinparam.Params {
