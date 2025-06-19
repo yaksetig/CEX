@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/Rjected/gmp v1.0.4-0.20190521043342-9c9965578e96
 	github.com/awalterschulze/gographviz v2.0.1+incompatible // indirect
+	github.com/awnumar/memguard v0.22.5
 	github.com/btcsuite/fastsha256 v0.0.0-20160815193821-637e65642941
 	github.com/btcsuite/golangcrypto v0.0.0-20150304025918-53f62d9b43e8
 	github.com/dchest/siphash v1.2.1
@@ -19,6 +20,6 @@ require (
 	github.com/mit-dci/lit v0.0.0-20200512190823-511d703a128d
 	github.com/mit-dci/zksigma v0.0.0-20190313133734-a6a19e83b9cc
 	github.com/olekukonko/tablewriter v0.0.5
-	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
-	golang.org/x/text v0.3.7
+	golang.org/x/crypto v0.16.0
+	golang.org/x/text v0.14.0
 )
