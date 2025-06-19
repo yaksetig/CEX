@@ -35,7 +35,7 @@ type SQLLimitEngine struct {
 
 // The schema for the limit orderbook -- TODO: THE PRICE SCHEMA SHOULD BE CONFIGURED BASED ON DESIRED PRECISION, WHICH SHOULD BE ENFORCED BY OUR TYPES AS WELL
 const (
-	limitEngineSchema = "pubkey VARBINARY(66), orderID VARBINARY(64), side TEXT, price DOUBLE(32,16) UNSIGNED, amountHave BIGINT(64), amountWant BIGINT(64), time TIMESTAMP"
+	limitEngineSchema = "pubkey VARBINARY(66), orderID VARBINARY(64), side TEXT, priceWant BIGINT(64), priceHave BIGINT(64), amountHave BIGINT(64), amountWant BIGINT(64), time TIMESTAMP"
 	sqlTimeFormat     = "2006-01-02 15:04:05"
 )
 

@@ -31,7 +31,7 @@ type SQLAuctionOrderbook struct {
 
 // The schema for the auction orderbook
 const (
-	auctionOrderbookSchema = "pubkey VARBINARY(66), side TEXT, price DOUBLE(30, 2) UNSIGNED, amountHave BIGINT(64), amountWant BIGINT(64), auctionID VARBINARY(64), nonce VARBINARY(4), sig BLOB, hashedOrder VARBINARY(64), PRIMARY KEY (hashedOrder)"
+	auctionOrderbookSchema = "pubkey VARBINARY(66), side TEXT, priceWant BIGINT(64), priceHave BIGINT(64), amountHave BIGINT(64), amountWant BIGINT(64), auctionID VARBINARY(64), nonce VARBINARY(4), sig BLOB, hashedOrder VARBINARY(64), PRIMARY KEY (hashedOrder)"
 )
 
 // CreateAuctionOrderbook creates a auction orderbook based on a pair
