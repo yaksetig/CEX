@@ -1,3 +1,6 @@
+// Package chainutils provides helper types and utility functions for
+// constructing chain- and host-related configuration structures used
+// throughout the exchange.
 package chainutils
 
 import (

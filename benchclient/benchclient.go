@@ -1,3 +1,6 @@
+// Package benchclient contains a simple RPC client implementation used
+// in benchmarks and integration tests.  It wraps the RPC transport and
+// exposes helper methods for the various exchange commands.
 package benchclient
 
 import (

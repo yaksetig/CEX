@@ -178,6 +178,9 @@ func opencxSetup(conf *opencxConfig) *[32]byte {
 	return privkey
 }
 
+// obtainPassword returns a LockedBuffer containing the key password.
+// The value can be provided via stdin, environment variable or directly
+// on the command line in that order of preference.
 func obtainPassword(conf *opencxConfig) (*memguard.LockedBuffer, error) {
 	if conf.KeyPasswordPipe {
 		data, err := io.ReadAll(os.Stdin)
@@ -198,10 +201,16 @@ func obtainPassword(conf *opencxConfig) (*memguard.LockedBuffer, error) {
 	return nil, nil
 }
 
+// generateCoinList derives the list of coin parameters from the command
+// line configuration.  It reuses generateHostParams and strips the host
+// information.
 func generateCoinList(conf *opencxConfig) []*coinparam.Params {
 	return util.HostParamList(generateHostParams(conf)).CoinListFromHostParams()
 }
 
+// generateHostParams constructs a list of HostParams based on the
+// configured network options.  Only entries with a host specified are
+// included in the result.
 func generateHostParams(conf *opencxConfig) (hostParamList []*util.HostParams) {
 	// Regular networks (Just like don't use any of these, I support them though)
 	if conf.Btchost != "" {

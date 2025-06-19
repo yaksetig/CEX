@@ -1,3 +1,6 @@
+// Opencxd is the main binary for running the OpenCX exchange daemon. It
+// initializes all required subsystems and exposes an RPC interface for
+// clients.
 package main
 
 import (
@@ -102,6 +105,8 @@ func newConfigParser(conf *opencxConfig, options flags.Options) *flags.Parser {
 	return parser
 }
 
+// main is the entry point for the daemon. It loads configuration,
+// sets up all supporting services and then waits for RPC requests.
 func main() {
 	memguard.CatchInterrupt()
 	defer memguard.Purge()
@@ -123,7 +128,8 @@ func main() {
 	// Check and load config params
 	key := opencxSetup(&conf)
 
-	// Generate the coin list based on the parameters we know
+	// Build the list of coins the server will support from the
+	// command-line configuration.
 	coinList := generateCoinList(&conf)
 
 	var pairList []*match.Pair
@@ -175,6 +181,8 @@ func main() {
 		logging.Fatalf("Error creating limit orderbook map for opencxd: %s", err)
 	}
 
+	// Each coin requires its own persistent deposit store where
+	// on-chain funds can be tracked.
 	logging.Infof("Creating deposit stores...")
 	var depositStores map[*coinparam.Params]cxdb.DepositStore
 	if len(conf.Whitelist) != 0 {
