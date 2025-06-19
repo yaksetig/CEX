@@ -1,3 +1,14 @@
 # crypto
 
-The crypto package currently has an interface for Timelock Puzzles, and an implementation of both the RCW96 timelock puzzle and a simple hash-based timelock puzzle. In the case of the hash-based timelock puzzle, it takes just as long to create the puzzle (if you are encrypting information with the result) as it does to solve it. With RCW96, this is not the case. It's supposed to be similar to interact with as the golang built-in `crypto` library.
+The crypto package contains primitives used throughout the project.  It includes
+implementations of several timelock puzzle schemes and utilities for producing
+cryptographic proofs.
+
+## Proof of Assets
+
+The `provisions` subpackage implements a privacy preserving proof of reserves
+protocol.  The exchange commits to the balance of each owned address and then
+publishes a Pedersen commitment to the sum of all balances.  Third parties can
+challenge the exchange to open individual commitments which proves that the
+aggregate commitment matches the on‑chain funds without revealing the complete
+set of addresses.

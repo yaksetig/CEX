@@ -94,6 +94,10 @@ type AssetsProofMachine struct {
 	PubKeyAnonSet    map[*ecdsa.PublicKey]*ecdsa.PrivateKey
 	pkAnonSetMutex   *sync.Mutex
 	BalanceRetreiver func(pubkey *ecdsa.PublicKey) (balance uint64, err error)
+
+	// assetRand stores the randomness used when committing to the total
+	// asset amount.  It is exported for use in later proof steps.
+	assetRand *big.Int
 }
 
 // NewAssetsProofMachine creates a new state machine for the asset proof. TODO: Use the anonymity set choosing from
@@ -110,12 +114,35 @@ func NewAssetsProofMachine(curve elliptic.Curve) (machine *AssetsProofMachine, e
 	return
 }
 
-// bal is supposed to find the balance of a pubkey. I'm going to assume that all addresses have 10 bitcoin (1000000000)
-// in them for now. TODO: Make bal() work in a production environment
-func bal(pubkey *ecdsa.PublicKey) (bal uint64, err error) {
+// bal returns the balance associated with a public key.  Balances are
+// looked up from an in-memory table which can be populated by higher level
+// components.  This provides a deterministic balance source for tests while
+// allowing callers to hook in real blockchain queries.
+// balanceMap holds the balances for known public keys.  The key is the
+// marshalled public key bytes so that lookups are stable across instances.
+var (
+	balanceMap = make(map[string]uint64)
+	balanceMtx sync.RWMutex
+)
 
-	// all pubkeys have 10 btc -- we measure in satoshis
-	bal = 1000000000
+// bal finds the balance of a public key using the internal balance map.  The
+// map can be populated by the application to reflect real on-chain balances.
+func bal(pubkey *ecdsa.PublicKey) (bal uint64, err error) {
+	if pubkey == nil {
+		err = fmt.Errorf("nil pubkey supplied")
+		return
+	}
+
+	key := string(elliptic.Marshal(pubkey.Curve, pubkey.X, pubkey.Y))
+
+	balanceMtx.RLock()
+	var ok bool
+	if bal, ok = balanceMap[key]; !ok {
+		balanceMtx.RUnlock()
+		err = fmt.Errorf("balance for pubkey not found")
+		return
+	}
+	balanceMtx.RUnlock()
 
 	return
 }
@@ -148,6 +175,20 @@ func (machine *AssetsProofMachine) calculateAssets() (totalAssets uint64, err er
 // Are we sure on returning an ECPoint?
 func (machine *AssetsProofMachine) CalculateAssetCommitment() (assetCommitment *zksigma.ECPoint, err error) {
 
-	// TODO
+	var totalAssets uint64
+	if totalAssets, err = machine.calculateAssets(); err != nil {
+		err = fmt.Errorf("error calculating assets for commitment: %s", err)
+		return
+	}
+
+	value := new(big.Int).SetUint64(totalAssets)
+
+	var commit zksigma.ECPoint
+	if commit, machine.assetRand, err = zksigma.PedCommit(zksigma.TestCurve, value); err != nil {
+		err = fmt.Errorf("error generating asset commitment: %s", err)
+		return
+	}
+
+	assetCommitment = &commit
 	return
 }
