@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>OpenCX Web UI</title>
+<style>
+body { font-family: sans-serif; }
+table { border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid #ccc; padding: 4px; }
+</style>
+</head>
+<body>
+<h1>OpenCX Web UI</h1>
+<div>
+<label for="pairSelect">Trading Pair:</label>
+<select id="pairSelect"></select>
+<button id="refreshBtn">Refresh</button>
+</div>
+<div id="price"></div>
+<table id="orderbook">
+<thead><tr><th>Side</th><th>Price</th><th>Amount</th></tr></thead>
+<tbody></tbody>
+</table>
+<script>
+async function loadPairs() {
+  const res = await fetch('/api/pairs');
+  const pairs = await res.json();
+  const sel = document.getElementById('pairSelect');
+  sel.innerHTML = '';
+  pairs.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p; sel.appendChild(opt);
+  });
+  if (pairs.length) refresh();
+}
+async function refresh() {
+  const pair = document.getElementById('pairSelect').value;
+  if (!pair) return;
+  const priceRes = await fetch('/api/price?pair=' + encodeURIComponent(pair));
+  const price = await priceRes.json();
+  document.getElementById('price').textContent = 'Price: ' + price;
+
+  const res = await fetch('/api/orderbook?pair=' + encodeURIComponent(pair));
+  const book = await res.json();
+  const tbody = document.querySelector('#orderbook tbody');
+  tbody.innerHTML = '';
+  Object.keys(book).forEach(k => {
+    book[k].forEach(o => {
+      const tr = document.createElement('tr');
+      const side = document.createElement('td');
+      side.textContent = o.limitorder.side ? 'buy' : 'sell';
+      const priceTd = document.createElement('td');
+      priceTd.textContent = k;
+      const amt = document.createElement('td');
+      amt.textContent = o.limitorder.amounthave;
+      tr.appendChild(side); tr.appendChild(priceTd); tr.appendChild(amt);
+      tbody.appendChild(tr);
+    });
+  });
+}
+document.getElementById('refreshBtn').addEventListener('click', refresh);
+window.onload = loadPairs;
+</script>
+</body>
+</html>

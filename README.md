@@ -101,6 +101,14 @@ go build ./cmd/ocx/...
 
 You can now issue any of the commands in the cxrpc README.md file.
 
+## Running opencx Web UI
+
+```sh
+go build ./cmd/webui/...
+./webui
+```
+
+
 ## Configuration
 
 There are configuration options (both command line and .conf) for the client and the server, and by default home folders for these files will be created at `~/.opencx/opencxd/` and `~/.opencx/ocx/` respectively. You can decide whether or not to use the
